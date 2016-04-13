@@ -1,3 +1,4 @@
+import sys
 #TODO get user message input
 #TODO convert said user message input into hex (base 16)
 #	s = user message input
@@ -8,26 +9,8 @@
 #m = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F'
 MESSAGE = '0123456789ABCDEF'	#temporary initial message
 Khex = '133457799BBCDFF1'		#temporary initial key
-K = ''	#key in binary
-M = ''	#message in binary form
-L = ''	#left half of message
-R = ''	#right half of message
-
-KP = '' #permutated key
-C =[]	#left half of permutated keys
-D = []	#right half of permutated keys
-KN = []	#the 16 subkeys
-
-MIP = ''	#message after IP
-LN = []		#left halves of the message
-RN = []		#right halves of the message
-E = [] 		#holds part of the value for the right sides of the encoded message
-KaE = []	#xor results of KN and E
-SBOX = []	#holds the sbox output values for the right sides of the encoded message
-PN = []		#holds the results of the P permutation
-RL = ''		#holds the message where right and left sides are switched
-CBIN = ''	#holds the encrypted message in binary format
-CHEX = ''	#holds the encrypted message in hex format
+MESSAGE = '627579'
+Khex = 'FEDCBA9876543210'
 
 '''Initial key permutation'''
 PC1 = [[57, 49, 41, 33, 25, 17, 9],
@@ -213,113 +196,129 @@ def doRCperm(message):
 	return res
 
 
+def generateDES(MESSAGE, Khex):
+  K = ''  #key in binary
+  M = ''  #message in binary form
+  L = ''  #left half of message
+  R = ''  #right half of message
+
+  KP = '' #permutated key
+  C =[] #left half of permutated keys
+  D = []  #right half of permutated keys
+  KN = [] #the 16 subkeys
+
+  MIP = ''  #message after IP
+  LN = []   #left halves of the message
+  RN = []   #right halves of the message
+  E = []    #holds part of the value for the right sides of the encoded message
+  KaE = []  #xor results of KN and E
+  SBOX = [] #holds the sbox output values for the right sides of the encoded message
+  PN = []   #holds the results of the P permutation
+  RL = ''   #holds the message where right and left sides are switched
+  CBIN = '' #holds the encrypted message in binary format
+  CHEX = '' #holds the encrypted message in hex format
+
+
+  '''Assign the initial message to M in binary form'''
+  M = getBinFromHex(MESSAGE)
+  #print 'M: ' + M
+
+
+  '''==================================================== START Key Development ===================================================='''
+  '''Assign the initial key to K in binary form'''
+  K = getBinFromHex(Khex)
+  #print 'K: ' + K
+  #print 'K: 0001001100110100010101110111100110011011101111001101111111110001'
+
+  '''Assign L and R to their respective halves of the message'''
+  L = getLeftHalf(M)
+  R = getRightHalf(M)
+  #print 'L + R: ' + L + R
+  #print 'L: ' + L
+  #print 'R: ' + R
+
+  '''Do an initial permuation on the key with the given table'''
+  KP = doPerm(K, PC1)
+  #print 'KP: ' + KP
+
+  '''Assign the halves of the permutated key to C (left) and D (right)'''
+  C.append(getLeftHalf(KP))
+  D.append(getRightHalf(KP))
+
+  '''Shift the halves based off the given table and assign the halves to the C and D lists'''
+  i=0
+  for val in LSHIFTS:
+  	C.append(doShifts(C[i], val))
+  	D.append(doShifts(D[i], val))
+  	i+=1
+
+  #for i in range(len(C)):
+  	#print "C" + str(i) + ": " + C[i]
+  	#print "D" + str(i) + ": " + D[i]
+
+  '''Combine each of the two halves (from C and D) and do a permutation with the given table and assign each as a unique subkey in KN'''
+  for i in range(16):
+  	KN.append(doPerm(C[i+1] + D[i+1], PC2))
+
+  #for i in range(len(KN)):
+  	#print "KN" + str(i) + ": " + KN[i]
+
+
+  '''==================================================== END Key Development ===================================================='''
+
+  '''==================================================== START Block Encoding ===================================================='''
+
+  '''Assign MIP to the result of M and the Initial Permutation'''
+  MIP = doPerm(M, IP)
+  #print 'MIP: ' + MIP
+
+  LN.append(getLeftHalf(MIP))
+  RN.append(getRightHalf(MIP))
+
+  #print 'LN + RN: ' + LN[0] + RN[0]
+  #print 'LN: ' + LN[0]
+  #print 'RN: ' + RN[0]
+
+
+  for i in range(1,17):
+  	LN.append(RN[i-1])						# the left half is equal to the previous right half
+  	E.append(doPerm(RN[i-1], EBIT))			# part of the right half where the permutation is performed on the previous right half
+  	KaE.append(xorVals(KN[i-1], E[i-1]))	# part of the right half where the key and E are xor together
+  	KaEsplit = splitInput(KaE[i-1], 6)		# splits the values by every 6th character
+  	SBOX.append(doRCperm(KaEsplit))			# gets the sbox output
+  	PN.append(doPerm(SBOX[i-1], P))			# performs the last permutation needed for the right half
+  	RN.append(xorVals(LN[i-1], PN[i-1]))	# adds the result of the xor of the previous left side and the permutation to the right side
+
+  RL = RN[16] + LN[16]	# combines the last right side with the last left side, but in reverse (right then left)
+  #print "RL: " + RL
+
+  CBIN = doPerm(RL, IP1)	# the last permutation to create the ciphertext in binary
+  CHEX = hex(int(CBIN, 2))[2:-1]	# Converts the ciphertext into hex
+  #print CBIN
+  #print CHEX
+  return CHEX
+
+
+  '''==================================================== END Block Encoding ===================================================='''
 
 
 
-'''Assign the initial message to M in binary form'''
-M = getBinFromHex(MESSAGE)
-#print 'M: ' + M
+'''print 'Number of arguments:', len(sys.argv), 'arguments.'
+print 'Argument List:', str(sys.argv)'''
 
-
-'''==================================================== START Key Development ===================================================='''
-'''Assign the initial key to K in binary form'''
-K = getBinFromHex(Khex)
-#print 'K: ' + K
-#print 'K: 0001001100110100010101110111100110011011101111001101111111110001'
-
-'''Assign L and R to their respective halves of the message'''
-L = getLeftHalf(M)
-R = getRightHalf(M)
-#print 'L + R: ' + L + R
-#print 'L: ' + L
-#print 'R: ' + R
-
-'''Do an initial permuation on the key with the given table'''
-KP = doPerm(K, PC1)
-#print 'KP: ' + KP
-
-'''Assign the halves of the permutated key to C (left) and D (right)'''
-C.append(getLeftHalf(KP))
-D.append(getRightHalf(KP))
-
-'''Shift the halves based off the given table and assign the halves to the C and D lists'''
-i=0
-for val in LSHIFTS:
-	C.append(doShifts(C[i], val))
-	D.append(doShifts(D[i], val))
-	i+=1
-
-#for i in range(len(C)):
-	#print "C" + str(i) + ": " + C[i]
-	#print "D" + str(i) + ": " + D[i]
-
-'''Combine each of the two halves (from C and D) and do a permutation with the given table and assign each as a unique subkey in KN'''
-for i in range(16):
-	KN.append(doPerm(C[i+1] + D[i+1], PC2))
-
-#for i in range(len(KN)):
-	#print "KN" + str(i) + ": " + KN[i]
-
-
-'''==================================================== END Key Development ===================================================='''
-
-'''==================================================== START Block Encoding ===================================================='''
-
-'''Assign MIP to the result of M and the Initial Permutation'''
-MIP = doPerm(M, IP)
-#print 'MIP: ' + MIP
-
-LN.append(getLeftHalf(MIP))
-RN.append(getRightHalf(MIP))
-
-#print 'LN + RN: ' + LN[0] + RN[0]
-#print 'LN: ' + LN[0]
-#print 'RN: ' + RN[0]
-
-
-for i in range(1,17):
-	LN.append(RN[i-1])						# the left half is equal to the previous right half
-	E.append(doPerm(RN[i-1], EBIT))			# part of the right half where the permutation is performed on the previous right half
-	KaE.append(xorVals(KN[i-1], E[i-1]))	# part of the right half where the key and E are xor together
-	KaEsplit = splitInput(KaE[i-1], 6)		# splits the values by every 6th character
-	SBOX.append(doRCperm(KaEsplit))			# gets the sbox output
-	PN.append(doPerm(SBOX[i-1], P))			# performs the last permutation needed for the right half
-	RN.append(xorVals(LN[i-1], PN[i-1]))	# adds the result of the xor of the previous left side and the permutation to the right side
-
-RL = RN[16] + LN[16]	# combines the last right side with the last left side, but in reverse (right then left)
-#print "RL: " + RL
-
-CBIN = doPerm(RL, IP1)	# the last permutation to create the ciphertext in binary
-CHEX = hex(int(CBIN, 2))[2:-1]	# Converts the ciphertext into hex
-print CHEX
-
-
-'''==================================================== END Block Encoding ===================================================='''
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if len(sys.argv) !=2:
+  print "Please give the message to be used"
+else:
+  recv = sys.argv[1]
+  MESSAGE = recv.encode("hex")
+  MESSAGES = splitInput(MESSAGE, 16)
+  if len(MESSAGES[len(MESSAGES) - 1]) != 16:
+    for i in range(len(MESSAGES[len(MESSAGES) - 1]), 16):
+	    MESSAGES[len(MESSAGES)-1] = MESSAGES[len(MESSAGES)-1] + '0'
+  fullDES = ''
+  for mess in MESSAGES:
+    fullDES = fullDES + generateDES(mess, Khex) + ' '
+  print fullDES
 
 
 
