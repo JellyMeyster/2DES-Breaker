@@ -196,7 +196,7 @@ def doRCperm(message):
 	return res
 
 
-def generateDES(MESSAGE, Khex):
+def encryptDES(MESSAGE, Khex, crypt):
   K = ''  #key in binary
   M = ''  #message in binary form
   L = ''  #left half of message
@@ -259,6 +259,13 @@ def generateDES(MESSAGE, Khex):
   '''Combine each of the two halves (from C and D) and do a permutation with the given table and assign each as a unique subkey in KN'''
   for i in range(16):
   	KN.append(doPerm(C[i+1] + D[i+1], PC2))
+  if crypt == 'decrypt':
+    tempKN = []
+    x = 15
+    while x >= 0:
+      tempKN.append(KN[x])
+      x-=1
+    KN = tempKN
 
   #for i in range(len(KN)):
   	#print "KN" + str(i) + ": " + KN[i]
@@ -293,7 +300,15 @@ def generateDES(MESSAGE, Khex):
   #print "RL: " + RL
 
   CBIN = doPerm(RL, IP1)	# the last permutation to create the ciphertext in binary
-  CHEX = hex(int(CBIN, 2))[2:-1]	# Converts the ciphertext into hex
+  if crypt == 'encrypt':
+    CHEX = hex(int(CBIN, 2))[2:]	# Converts the ciphertext into hex
+  else:
+    CHEX = hex(int(CBIN, 2))[2:]  # Converts the ciphertext into hex
+  x = 0
+  for val in CHEX:
+    if val == 'L':
+      CHEX = CHEX[:i] + CHEX[i+1:]
+    x+=1
   #print CBIN
   #print CHEX
   return CHEX
@@ -305,19 +320,28 @@ def generateDES(MESSAGE, Khex):
 
 '''print 'Number of arguments:', len(sys.argv), 'arguments.'
 print 'Argument List:', str(sys.argv)'''
-
-if len(sys.argv) !=2:
-  print "Please give the message to be used"
+if len(sys.argv) !=3:
+  print "Please give the message to be used then encrypt/decrypt"
+elif sys.argv[2] != 'encrypt' and sys.argv[2] != 'decrypt':
+  print "Please give the message to be used then e/d"
 else:
-  recv = sys.argv[1]
-  MESSAGE = recv.encode("hex")
+  MESSAGE = sys.argv[1]
+  crypt = sys.argv[2]
+  if crypt == 'encrypt':
+    MESSAGE = MESSAGE.encode("hex")
+  elif crypt == 'decrypt':  # already in hex
+    MESSAGE = MESSAGE.replace(" ", "") # in case it comes sparated with spaces
   MESSAGES = splitInput(MESSAGE, 16)
-  if len(MESSAGES[len(MESSAGES) - 1]) != 16:
+  if len(MESSAGES[len(MESSAGES) - 1]) != 16:  # add padding if not at full 16 length
     for i in range(len(MESSAGES[len(MESSAGES) - 1]), 16):
-	    MESSAGES[len(MESSAGES)-1] = MESSAGES[len(MESSAGES)-1] + '0'
+	    MESSAGES[len(MESSAGES)-1] = MESSAGES[len(MESSAGES)-1] + '0'  # pad with 0's
   fullDES = ''
   for mess in MESSAGES:
-    fullDES = fullDES + generateDES(mess, Khex) + ' '
+    r = encryptDES(mess, Khex, crypt) + ' '
+    if crypt == 'decrypt':
+      r = r.strip() #get rid of trailing newline
+      r = ''.join(chr(int(r[i:i+2], 16)) for i in range(0, len(r), 2))  # converts from hex to ASCII
+    fullDES = fullDES + r
   print fullDES
 
 
