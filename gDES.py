@@ -7,10 +7,7 @@ import sys
 #	s.encode('hex_codec')
 
 #m = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F'
-MESSAGE = '0123456789ABCDEF'	#temporary initial message
-Khex = '133457799BBCDFF1'		#temporary initial key
-MESSAGE = '627579'
-Khex = 'FEDCBA9876543210'
+Khex = ['FEDCBA9876543210', 'FEDCBA9876543211'] # keys for both DES iterations
 
 '''Initial key permutation'''
 PC1 = [[57, 49, 41, 33, 25, 17, 9],
@@ -196,7 +193,7 @@ def doRCperm(message):
 	return res
 
 
-def encryptDES(MESSAGE, Khex, crypt):
+def DESstuff(MESSAGE, Khex, crypt):
   K = ''  #key in binary
   M = ''  #message in binary form
   L = ''  #left half of message
@@ -300,10 +297,7 @@ def encryptDES(MESSAGE, Khex, crypt):
   #print "RL: " + RL
 
   CBIN = doPerm(RL, IP1)	# the last permutation to create the ciphertext in binary
-  if crypt == 'encrypt':
-    CHEX = hex(int(CBIN, 2))[2:]	# Converts the ciphertext into hex
-  else:
-    CHEX = hex(int(CBIN, 2))[2:]  # Converts the ciphertext into hex
+  CHEX = hex(int(CBIN, 2))[2:]	# Converts the ciphertext into hex
   x = 0
   for val in CHEX:
     if val == 'L':
@@ -337,9 +331,10 @@ else:
 	    MESSAGES[len(MESSAGES)-1] = MESSAGES[len(MESSAGES)-1] + '0'  # pad with 0's
   fullDES = ''
   for mess in MESSAGES:
-    r = encryptDES(mess, Khex, crypt) + ' '
+    r = DESstuff(mess, Khex[0], crypt) + ' '
+    r = DESstuff(r, Khex[1], crypt) + ' '
     if crypt == 'decrypt':
-      r = r.strip() #get rid of trailing newline
+      r = r.strip() #get rid of trailing spaces 
       r = ''.join(chr(int(r[i:i+2], 16)) for i in range(0, len(r), 2))  # converts from hex to ASCII
     fullDES = fullDES + r
   print fullDES
