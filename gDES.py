@@ -314,17 +314,23 @@ def DESstuff(MESSAGE, Khex, crypt):
 
 '''print 'Number of arguments:', len(sys.argv), 'arguments.'
 print 'Argument List:', str(sys.argv)'''
-if len(sys.argv) !=3:
-  print "Please give the message to be used then encrypt/decrypt"
+if len(sys.argv) !=4 and len(sys.argv) !=5:
+  print "Please give the message to be used then encrypt/decrypt then 1 or 2 for 1DES or 2DES"
 elif sys.argv[2] != 'encrypt' and sys.argv[2] != 'decrypt':
   print "Please give the message to be used then e/d"
+elif sys.argv[3] != '1' and sys.argv[3] != '2':
+  print "Please give proper number value 1 or 2 for 1DES or 2DES"
 else:
   MESSAGE = sys.argv[1]
   crypt = sys.argv[2]
+  desNum = sys.argv[3]
+  if len(sys.argv) == 5:
+    Khex = sys.argv[4].split()
   if crypt == 'encrypt':
     MESSAGE = MESSAGE.encode("hex")
   elif crypt == 'decrypt':  # already in hex
     MESSAGE = MESSAGE.replace(" ", "") # in case it comes sparated with spaces
+
   MESSAGES = splitInput(MESSAGE, 16)
   if len(MESSAGES[len(MESSAGES) - 1]) != 16:  # add padding if not at full 16 length
     for i in range(len(MESSAGES[len(MESSAGES) - 1]), 16):
@@ -332,7 +338,8 @@ else:
   fullDES = ''
   for mess in MESSAGES:
     r = DESstuff(mess, Khex[0], crypt) + ' '
-    r = DESstuff(r, Khex[1], crypt) + ' '
+    if desNum == '2':
+      r = DESstuff(r, Khex[1], crypt) + ' '
     if crypt == 'decrypt':
       r = r.strip() #get rid of trailing spaces 
       r = ''.join(chr(int(r[i:i+2], 16)) for i in range(0, len(r), 2))  # converts from hex to ASCII
