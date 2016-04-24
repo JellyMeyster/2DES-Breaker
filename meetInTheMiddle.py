@@ -1,22 +1,31 @@
-import subprocess
-import sys
 import itertools
 import gDES
 
-Khex = ['FEDCBA9876543210', 'FEDCBA9876543211'] # keys for both DES iterations
+Khexs = ['0000000000001255', '000000000000125c'] # keys for both DES iterations
 PT = '6100000000000000'
-
-print PT
-r = gDES.DESstuff(PT, Khex[0], 'encrypt') + ' '
-CT = gDES.DESstuff(r, Khex[1], 'encrypt') + ' '
-print CT
-
+enc = {}
+dec = {}
+r = gDES.DESstuff(PT, Khexs[0], 'encrypt') + ' '
+CT = gDES.DESstuff(r, Khexs[1], 'encrypt') + ' '
+CT = CT.zfill(17)
 
 keyChars = '0123456789abcdef'
 keyLen = 16
 gen = itertools.product(keyChars, repeat=keyLen)
+i =0
 for keyvals in gen:
+	if i > 4700:
+		break
 	key = ''.join(keyvals)
-	#print key
-	print "ENCRYPT: " + gDES.DESstuff(PT, key, 'encrypt') + "  :  " + key
-	print "DECRYPT: " + gDES.DESstuff(CT, key, 'decrypt') + "  :  " + key
+	res = gDES.DESstuff(PT, key, 'encrypt')
+	enc[res] = key
+	res = gDES.DESstuff(CT, key, 'decrypt')
+	dec[res] = key
+	i += 1
+
+print "\nRESULTS:"
+for data, key in dec.items():
+	if enc.get(data) != None:
+		print "THE FIRST KEY IS:\t" + enc.get(data)
+		print "THE SECOND KEY IS:\t" + key
+
