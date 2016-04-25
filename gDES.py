@@ -1,10 +1,4 @@
 import sys
-#TODO get user message input
-#TODO convert said user message input into hex (base 16)
-#	s = user message input
-#	hex_chars = map(hex,map(ord,s))
-#	or
-#	s.encode('hex_codec')
 
 #m = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F'
 Khex = ['FEDCBA9876543210', 'FEDCBA9876543211'] # keys for both DES iterations
